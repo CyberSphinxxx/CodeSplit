@@ -1,78 +1,73 @@
-## NOTE: THIS PROJECT IS STILL ON GOING AND YOU MAY ENCOUNTER SOME BUGS
-### If you find any bugs in the code, kindy report it on the issue tab above :)
------------
+# React + TypeScript + Vite
 
-## Interactive Code Editor
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-- This project is a simple **interactive code editor** with multiple tab functionality.
-- It allows users to write and run HTML code in real-time, offering an in-browser preview.
-- The editor includes several controls, such as adding/removing tabs, running code, resetting the editor, and toggling full-screen mode.
+Currently, two official plugins are available:
 
-## Features
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-- **Multiple Tabs:** Open and switch between several code editing tabs.
-- **Live Preview:** See the output of your HTML code right away in a preview window.
-- **Add/Remove Tabs:** Easily add new tabs or remove old ones.
-- **Start Over / Start from Scratch:** Reset your code or start with a blank template.
-- **Full-Screen Mode:** Switch to full-screen mode for a better preview.
-- **ACE Code Editor:** Uses the ACE editor for easy code editing and highlighting.
-- **Custom Background Color:** You can select your own background color.
+## React Compiler
 
-## Project Structure
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-This project contains three main files:
+## Expanding the ESLint configuration
 
-1. `index.html`: The main HTML file that contains the structure of the code editor.
-2. `styles.css`: The CSS file responsible for styling the editor, buttons, and layout.
-3. `script.js`: The JavaScript file that manages the functionality of the code editor, such as adding tabs, running code, and handling full-screen toggling.
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## Getting Started
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-To run the project locally, follow these steps:
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-### Prerequisites
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
 
-Make sure you have a modern web browser installed. No server or additional setup is required.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-### Steps
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-**1. Fork the repository:**
-Go to the repository on GitHub, click the "Fork" button at the top right of the page to create a copy of the repository under your own account.
-
-**2. Clone the repository (from your forked version):**
-
-   ```bash
-   git clone https://github.com/yourusername/interactive-code-editor.git
-   ```
-
-**3. Navigate to the project directory:**
-   ```bash
-   cd interactive-code-editor
-   ```
-
-**4. Open the index.html file in your browser:**
-   ```bash
-   open index.html
-   ```
-   or simply drag the index.html file into a web browser window.
-
-## Usage
-
-- `Write HTML Code:`   In the code editor, write your HTML, CSS, and JavaScript code.
-- `Run the Code:`      Click the Run Code button to see the output rendered in the preview pane.
-- `Add New Tabs:`      Click the + button to add new tabs.
-- `Remove Tabs:`       Click the × icon next to each tab to remove it.
-- `Start Over:`        Click the Start Over button to reset the editor with default content.
-- `Start From Scratch:`Click the Start From Scratch button to start with a blank editor.
-- `Full-Screen Mode:`  Click the Full Screen button to toggle the preview into full-screen mode.
-
-## Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
-
-**If you want to contribute:**
-
-1. Fork the project.
-2. Create your feature branch: `git checkout -b feature/AmazingFeature`
-3. Commit your changes: `git commit -m 'Added some AmazingFeature'`
-4. Push to the branch: `git push origin feature/AmazingFeature`
-5. Open a pull request.
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
