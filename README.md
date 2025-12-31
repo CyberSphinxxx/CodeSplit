@@ -1,73 +1,73 @@
-# React + TypeScript + Vite
+# Interactive Code Editor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A powerful, browser-based code editor built with React, TypeScript, and Vite. It provides a VS Code-like experience for editing HTML, CSS, and JavaScript with instant live preview.
 
-Currently, two official plugins are available:
+![Interactive Code Editor Preview](public/vite.svg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+### 👨‍💻 Editor Experience
+- **Monaco Editor Integration**: Full-featured code editor powered by VS Code's core.
+- **Multi-File Support**: Dedicated tabs for `index.html`, `styles.css`, and `script.js`.
+- **IntelliSense**: Smart code completion and syntax highlighting.
+- **Emmet Support**: Fast HTML & CSS coding with abbreviation expansion (e.g., `div.container>ul>li*3` + Tab).
+- **Prettier Formatting**: Auto-format code with a single click.
+- **Distraction-Free Zen Mode**: Toggle "Zen Mode" to hide menus and focus entirely on your code.
+- **Minimap & Word Wrap**: Toggleable editor minimap and word wrap in settings.
+- **Resizable Layout**: Draggable divider between editor and preview panes.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🚀 Live Preview & Console
+- **Instant Live Preview**: See your changes update in real-time as you type.
+- **Device Simulation**: Test responsiveness with one-click presets for Desktop, Tablet, and Mobile views.
+- **Pop-Out Preview**: Open the live preview in a separate browser window/tab (supports dual-monitors).
+- **Collapsible Preview**: Hide the preview panel completely to maximize editor space.
+- **Integrated Console**: Built-in console drawer captures `log`, `warn`, and `error` messages from your simulated app.
 
-## Expanding the ESLint configuration
+### 🛠️ Tools & Persistence
+- **Auto-Save**: All changes are automatically persisted to `localStorage` – never lose your work.
+- **Download Project**: Export your work as a ZIP file containing the full project structure.
+- **Share Code**: Generate a unique URL to share your code snippets with others (using LZ-string compression).
+- **CDN Management**: deeply integrated support for injecting external libraries (Bootstrap, Tailwind, FontAwesome, jQuery) via Settings.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 📦 Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **Editor**: `@monaco-editor/react` + `monaco-editor`
+- **Styling**: Tailwind CSS
+- **State Management**: React Hooks + LocalStorage
+- **Utilities**: `jszip`, `file-saver`, `lz-string`, `prettier`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🏃‍♂️ Getting Started
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Interactive_Code_Editor
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+4. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+## 🎮 Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl + S` / `Cmd + S` | Refresh Preview |
+| `Tab` | Expand Emmet Abbreviation |
+
+## 📝 License
+
+MIT
