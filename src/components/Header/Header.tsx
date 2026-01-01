@@ -1,8 +1,12 @@
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+
 interface HeaderProps {
     title?: string;
     onFormat?: () => void;
     onSettingsOpen?: () => void;
     onDownload?: () => void;
+    onExportHTML?: () => void;
     onShare?: () => void;
     onZenMode?: () => void;
     isZenMode?: boolean;
@@ -13,11 +17,51 @@ function Header({
     onFormat,
     onSettingsOpen,
     onDownload,
+    onExportHTML,
     onShare,
     onZenMode,
 }: HeaderProps) {
+    const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+    const downloadMenuRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+
+    // Toggle dropdown and calculate position synchronously
+    const toggleDropdown = () => {
+        if (!isDownloadMenuOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setMenuPosition({
+                top: rect.bottom + 4,
+                right: window.innerWidth - rect.right,
+            });
+        }
+        setIsDownloadMenuOpen(!isDownloadMenuOpen);
+    };
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                downloadMenuRef.current &&
+                !downloadMenuRef.current.contains(event.target as Node) &&
+                buttonRef.current &&
+                !buttonRef.current.contains(event.target as Node)
+            ) {
+                setIsDownloadMenuOpen(false);
+            }
+        };
+
+        if (isDownloadMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isDownloadMenuOpen]);
+
     return (
-        <header className="sticky top-0 z-50 w-full bg-slate-800 border-b border-slate-700 shadow-lg flex-shrink-0 select-none">
+        <header className="sticky top-0 z-[9999] w-full bg-slate-800 border-b border-slate-700 shadow-lg flex-shrink-0 select-none">
             <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-14">
                     {/* Logo / Title */}
@@ -54,16 +98,25 @@ function Header({
                             </svg>
                             <span className="hidden sm:inline">Prettier</span>
                         </button>
-                        <button
-                            onClick={onDownload}
-                            className="px-2 sm:px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1.5"
-                            title="Download project as ZIP"
-                        >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            <span className="hidden sm:inline">Download</span>
-                        </button>
+
+                        {/* Download Dropdown */}
+                        <div className="relative">
+                            <button
+                                ref={buttonRef}
+                                onClick={toggleDropdown}
+                                className="px-2 sm:px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1.5"
+                                title="Export options"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span className="hidden sm:inline">Export</span>
+                                <svg className="w-3 h-3 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+
                         <button
                             onClick={onShare}
                             className="px-2 sm:px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1.5"
@@ -85,10 +138,53 @@ function Header({
                             </svg>
                             <span className="hidden sm:inline">Settings</span>
                         </button>
-
                     </nav>
                 </div>
             </div>
+
+            {/* Dropdown Menu - Rendered via Portal */}
+            {isDownloadMenuOpen && createPortal(
+                <div
+                    ref={downloadMenuRef}
+                    className="fixed w-52 bg-slate-700 rounded-lg shadow-xl border border-slate-600 py-1 z-[99999] animate-in fade-in slide-in-from-top-2 duration-150"
+                    style={{
+                        top: menuPosition.top,
+                        right: menuPosition.right,
+                    }}
+                >
+                    <button
+                        onClick={() => {
+                            onDownload?.();
+                            setIsDownloadMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-sm text-left text-slate-200 hover:bg-slate-600 flex items-center gap-3 transition-colors"
+                    >
+                        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        <div>
+                            <div className="font-medium">Download as ZIP</div>
+                            <div className="text-xs text-slate-400">Separate HTML, CSS, JS files</div>
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => {
+                            onExportHTML?.();
+                            setIsDownloadMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-sm text-left text-slate-200 hover:bg-slate-600 flex items-center gap-3 transition-colors"
+                    >
+                        <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                            <div className="font-medium">Export as Single HTML</div>
+                            <div className="text-xs text-slate-400">CSS & JS embedded inline</div>
+                        </div>
+                    </button>
+                </div>,
+                document.body
+            )}
         </header>
     );
 }

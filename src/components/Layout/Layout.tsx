@@ -20,6 +20,10 @@ function Layout() {
         mainContentRef.current?.downloadProject();
     };
 
+    const handleExportHTML = () => {
+        mainContentRef.current?.exportHTML();
+    };
+
     const handleShare = () => {
         mainContentRef.current?.shareCode();
     };
@@ -39,6 +43,7 @@ function Layout() {
                     onFormat={handleFormat}
                     onSettingsOpen={handleSettingsOpen}
                     onDownload={handleDownload}
+                    onExportHTML={handleExportHTML}
                     onShare={handleShare}
                     onZenMode={toggleZenMode}
                     isZenMode={isZenMode}
