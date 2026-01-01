@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useAuth } from "../../context/AuthContext";
 
 interface HeaderProps {
     title?: string;
@@ -10,6 +11,9 @@ interface HeaderProps {
     onShare?: () => void;
     onZenMode?: () => void;
     isZenMode?: boolean;
+    onSave?: () => void;
+    isSaving?: boolean;
+    onDashboard?: () => void;
 }
 
 function Header({
@@ -20,7 +24,11 @@ function Header({
     onExportHTML,
     onShare,
     onZenMode,
+    onSave,
+    isSaving,
+    onDashboard,
 }: HeaderProps) {
+    const { user, logInWithGithub, logOut, loading: authLoading } = useAuth();
     const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
     const downloadMenuRef = useRef<HTMLDivElement>(null);
@@ -138,6 +146,82 @@ function Header({
                             </svg>
                             <span className="hidden sm:inline">Settings</span>
                         </button>
+
+                        {/* Divider */}
+                        <div className="hidden sm:block w-px h-6 bg-slate-600 mx-1" />
+
+                        {/* Save Button - Only show when logged in */}
+                        {user && (
+                            <button
+                                onClick={onSave}
+                                disabled={isSaving}
+                                className="px-2 sm:px-3 py-1.5 text-sm font-medium text-emerald-400 hover:text-emerald-300 hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Save project to cloud"
+                            >
+                                {isSaving ? (
+                                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                    </svg>
+                                )}
+                                <span className="hidden sm:inline">{isSaving ? "Saving..." : "Save"}</span>
+                            </button>
+                        )}
+
+                        {/* Dashboard Button - Only show when logged in */}
+                        {user && onDashboard && (
+                            <button
+                                onClick={onDashboard}
+                                className="px-2 sm:px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1.5"
+                                title="View all projects"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                </svg>
+                                <span className="hidden sm:inline">Projects</span>
+                            </button>
+                        )}
+
+                        {/* Auth Section */}
+                        {authLoading ? (
+                            <div className="w-8 h-8 rounded-full bg-slate-700 animate-pulse" />
+                        ) : user ? (
+                            <div className="flex items-center gap-2">
+                                {/* User Avatar */}
+                                <img
+                                    src={user.photoURL || "https://via.placeholder.com/32"}
+                                    alt={user.displayName || "User"}
+                                    className="w-8 h-8 rounded-full border-2 border-slate-600 hover:border-slate-500 transition-colors"
+                                    title={user.displayName || user.email || "User"}
+                                />
+                                {/* Logout Button */}
+                                <button
+                                    onClick={logOut}
+                                    className="px-2 sm:px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-red-400 hover:bg-slate-700 rounded-md transition-colors flex items-center gap-1.5"
+                                    title="Logout"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    <span className="hidden sm:inline">Logout</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={logInWithGithub}
+                                className="px-3 py-1.5 text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white rounded-md transition-colors flex items-center gap-2"
+                                title="Login with GitHub"
+                            >
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                                </svg>
+                                <span className="hidden sm:inline">Login with GitHub</span>
+                            </button>
+                        )}
                     </nav>
                 </div>
             </div>
