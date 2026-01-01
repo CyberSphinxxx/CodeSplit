@@ -107,6 +107,32 @@ export const getUserProjects = async (userId: string): Promise<Project[]> => {
 };
 
 /**
+ * Retrieves a single project by ID.
+ * 
+ * @param projectId - The ID of the project to fetch
+ * @returns The project data or null if not found
+ */
+export const getProjectById = async (projectId: string): Promise<Project | null> => {
+    const projectRef = ref(database, `${PROJECTS_PATH}/${projectId}`);
+    const snapshot = await get(projectRef);
+
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        return {
+            id: projectId,
+            title: data.title,
+            html: data.html,
+            css: data.css,
+            js: data.js,
+            ownerId: data.ownerId,
+            updatedAt: data.updatedAt
+        };
+    }
+
+    return null;
+};
+
+/**
  * Deletes a project from Realtime Database.
  * 
  * @param projectId - The ID of the project to delete
