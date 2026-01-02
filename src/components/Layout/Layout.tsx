@@ -6,7 +6,7 @@ import Footer from "../Footer/Footer";
 import Dashboard from "../Dashboard/Dashboard";
 import type { MainContentRef } from "../MainContent/MainContent";
 import type { Project } from "../../services/projectService";
-import { renameProject } from "../../services/projectService";
+import { renameProject, getProjectById } from "../../services/projectService";
 import { useAuth } from "../../context/AuthContext";
 
 
@@ -27,29 +27,55 @@ function Layout({ showDashboardOnMount = false }: LayoutProps) {
     const [projectLoaded, setProjectLoaded] = useState(false);
     const { user } = useAuth();
 
-    // Load project from navigation state
+    // Load project from navigation state or fetch from database
     useEffect(() => {
-        if (!projectId) {
-            setCurrentProjectTitle("Untitled Project");
-            setProjectLoaded(true);
-            return;
-        }
+        const loadProject = async () => {
+            if (!projectId) {
+                setCurrentProjectTitle("Untitled Project");
+                setProjectLoaded(true);
+                return;
+            }
 
-        // Get project from navigation state
-        const state = location.state as { project?: Project } | null;
-        const project = state?.project;
+            // Get project from navigation state
+            const state = location.state as { project?: Project } | null;
+            const project = state?.project;
 
-        if (project) {
-            console.log("Loading project from state:", project.title);
-            setCurrentProjectId(project.id);
-            setCurrentProjectTitle(project.title || "Untitled Project");
-            setProjectLoaded(true);
-        } else {
-            // No state available (direct URL access)
-            console.log("No project state available");
-            setCurrentProjectTitle("Untitled Project");
-            setProjectLoaded(true);
-        }
+            if (project) {
+                console.log("Loading project from state:", project.title);
+                setCurrentProjectId(project.id);
+                setCurrentProjectTitle(project.title || "Untitled Project");
+                setProjectLoaded(true);
+            } else {
+                // No state available (direct URL access or forked template) - fetch from database
+                console.log("No project state, fetching from database...");
+                try {
+                    const fetchedProject = await getProjectById(projectId);
+                    if (fetchedProject) {
+                        console.log("Loaded project from database:", fetchedProject.title);
+                        setCurrentProjectId(fetchedProject.id);
+                        setCurrentProjectTitle(fetchedProject.title || "Untitled Project");
+
+                        // Also load the content into the editor
+                        if (mainContentRef.current) {
+                            mainContentRef.current.loadProject(
+                                fetchedProject.html,
+                                fetchedProject.css,
+                                fetchedProject.js
+                            );
+                        }
+                    } else {
+                        console.log("Project not found in database");
+                        setCurrentProjectTitle("Untitled Project");
+                    }
+                } catch (error) {
+                    console.error("Error fetching project:", error);
+                    setCurrentProjectTitle("Untitled Project");
+                }
+                setProjectLoaded(true);
+            }
+        };
+
+        loadProject();
     }, [projectId, location.state]);
 
     // Load project content into editor once ref is ready
