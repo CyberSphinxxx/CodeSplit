@@ -65,17 +65,27 @@ export function useProfile(userId: string | null | undefined): UseProfileResult 
         setError(null);
 
         try {
-            // Fetch profile, featured projects, and all projects in parallel
-            const [userProfile, featured, all] = await Promise.all([
-                getUserProfile(userId),
-                getFeaturedProjects(userId),
-                getUserProjects(userId)
-            ]);
-
+            // Fetch profile first - this is critical
+            const userProfile = await getUserProfile(userId);
             setProfile(userProfile);
-            setFeaturedProjects(featured);
-            setAllProjects(all);
-            setLanguageStats(calculateLanguageStats(all));
+
+            // Attempt to fetch projects - may fail for public viewers due to permissions
+            try {
+                const [featured, all] = await Promise.all([
+                    getFeaturedProjects(userId),
+                    getUserProjects(userId)
+                ]);
+                setFeaturedProjects(featured);
+                setAllProjects(all);
+                setLanguageStats(calculateLanguageStats(all));
+            } catch (projectsErr) {
+                // Projects fetch failed (likely permission denied for public viewers)
+                // This is expected for unauthenticated users viewing public profiles
+                console.warn("Could not fetch projects (may require authentication):", projectsErr);
+                setFeaturedProjects([]);
+                setAllProjects([]);
+                setLanguageStats({ html: 0, css: 0, js: 0, total: 0 });
+            }
         } catch (err) {
             console.error("Error fetching profile data:", err);
             setError(err instanceof Error ? err : new Error("Failed to fetch profile"));
