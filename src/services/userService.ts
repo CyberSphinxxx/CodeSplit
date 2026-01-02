@@ -159,11 +159,17 @@ export const claimUsername = async (userId: string, username: string): Promise<v
  */
 export const getUserIdByUsername = async (username: string): Promise<string | null> => {
     const usernameLower = username.toLowerCase();
-    const usernameRef = ref(database, `${USERNAMES_PATH}/${usernameLower}`);
+    const path = `${USERNAMES_PATH}/${usernameLower}`;
+    console.log("[userService] Looking up username at path:", path);
+
+    const usernameRef = ref(database, path);
     const snapshot = await get(usernameRef);
 
+    console.log("[userService] Snapshot exists?", snapshot.exists());
     if (snapshot.exists()) {
-        return snapshot.val().uid;
+        const val = snapshot.val();
+        console.log("[userService] Snapshot value:", val);
+        return val.uid;
     }
 
     return null;
