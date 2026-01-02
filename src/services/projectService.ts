@@ -27,6 +27,12 @@ export interface Project extends ProjectData {
     updatedAt: number; // Realtime DB timestamps are numbers (milliseconds)
     isPublic?: boolean; // Whether the project is publicly visible
     isFeatured?: boolean; // Whether the project is featured on user's profile
+    // Community publishing fields
+    description?: string;
+    tags?: string[];
+    likes?: number;
+    views?: number;
+    publishedAt?: number;
 }
 
 export interface SaveProjectInput extends ProjectData {
@@ -37,7 +43,7 @@ const PROJECTS_PATH = "projects";
 
 /**
  * Saves a project to Realtime Database.
- * If projectData has an ID, updates the existing node.
+ * If projectData has an ID, updates the existing node (preserving other fields).
  * If no ID is provided, pushes a new node.
  * 
  * @param userId - The ID of the user who owns the project
@@ -50,25 +56,29 @@ export const saveProject = async (
 ): Promise<string> => {
     const { id, title, html, css, js } = projectData;
 
-    const dataToSave = {
-        title,
-        html,
-        css,
-        js,
-        ownerId: userId,
-        updatedAt: serverTimestamp()
-    };
-
     if (id) {
-        // Update existing project
+        // Update existing project - use update() to preserve other fields (isPublic, tags, likes, etc.)
         const projectRef = ref(database, `${PROJECTS_PATH}/${id}`);
-        await set(projectRef, dataToSave);
+        await update(projectRef, {
+            title,
+            html,
+            css,
+            js,
+            updatedAt: serverTimestamp()
+        });
         return id;
     } else {
-        // Create new project
+        // Create new project - use set() with full data including ownerId
         const projectsRef = ref(database, PROJECTS_PATH);
         const newProjectRef = push(projectsRef);
-        await set(newProjectRef, dataToSave);
+        await set(newProjectRef, {
+            title,
+            html,
+            css,
+            js,
+            ownerId: userId,
+            updatedAt: serverTimestamp()
+        });
         return newProjectRef.key!;
     }
 };
@@ -132,7 +142,9 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
             ownerId: data.ownerId,
             updatedAt: data.updatedAt,
             isPublic: data.isPublic ?? false,
-            isFeatured: data.isFeatured ?? false
+            isFeatured: data.isFeatured ?? false,
+            description: data.description || "",
+            tags: data.tags || []
         };
     }
 
