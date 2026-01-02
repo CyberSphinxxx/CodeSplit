@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
     "emmet-monaco-es": "^5.6.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.7.0",
