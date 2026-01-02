@@ -11,6 +11,7 @@ import {
     serverTimestamp
 } from "firebase/database";
 import { database } from "../config/firebase";
+import { officialTemplates } from "../data/templates";
 
 // Type definitions
 export interface ProjectData {
@@ -24,6 +25,8 @@ export interface Project extends ProjectData {
     id: string;
     ownerId: string;
     updatedAt: number; // Realtime DB timestamps are numbers (milliseconds)
+    isPublic?: boolean; // Whether the project is publicly visible
+    isFeatured?: boolean; // Whether the project is featured on user's profile
 }
 
 export interface SaveProjectInput extends ProjectData {
@@ -97,7 +100,9 @@ export const getUserProjects = async (userId: string): Promise<Project[]> => {
                 css: data.css,
                 js: data.js,
                 ownerId: data.ownerId,
-                updatedAt: data.updatedAt
+                updatedAt: data.updatedAt,
+                isPublic: data.isPublic ?? false,
+                isFeatured: data.isFeatured ?? false
             });
         });
     }
@@ -125,7 +130,9 @@ export const getProjectById = async (projectId: string): Promise<Project | null>
             css: data.css,
             js: data.js,
             ownerId: data.ownerId,
-            updatedAt: data.updatedAt
+            updatedAt: data.updatedAt,
+            isPublic: data.isPublic ?? false,
+            isFeatured: data.isFeatured ?? false
         };
     }
 
@@ -182,4 +189,114 @@ export const duplicateProject = async (
     });
 
     return newProjectRef.key!;
+};
+
+/**
+ * Forks a template to create a new project for the user.
+ * 
+ * @param templateId - The ID of the template to fork
+ * @param userId - The ID of the user who will own the new project
+ * @returns The ID of the newly created project
+ * @throws Error if template is not found
+ */
+export const forkTemplate = async (
+    templateId: string,
+    userId: string
+): Promise<string> => {
+    // Find the template by ID
+    const template = officialTemplates.find(t => t.id === templateId);
+
+    if (!template) {
+        throw new Error(`Template with ID "${templateId}" not found`);
+    }
+
+    // Create a new project from the template
+    const projectsRef = ref(database, PROJECTS_PATH);
+    const newProjectRef = push(projectsRef);
+
+    await set(newProjectRef, {
+        title: template.title,
+        html: template.html,
+        css: template.css,
+        js: template.js,
+        ownerId: userId,
+        updatedAt: serverTimestamp()
+    });
+
+    return newProjectRef.key!;
+};
+
+/**
+ * Toggles the public visibility of a project.
+ * 
+ * @param projectId - The ID of the project
+ * @param isPublic - Whether the project should be publicly visible
+ */
+export const toggleProjectVisibility = async (
+    projectId: string,
+    isPublic: boolean
+): Promise<void> => {
+    const projectRef = ref(database, `${PROJECTS_PATH}/${projectId}`);
+    await update(projectRef, {
+        isPublic,
+        updatedAt: serverTimestamp()
+    });
+};
+
+/**
+ * Toggles the featured status of a project.
+ * 
+ * @param projectId - The ID of the project
+ * @param isFeatured - Whether the project should be featured on user's profile
+ */
+export const toggleProjectFeatured = async (
+    projectId: string,
+    isFeatured: boolean
+): Promise<void> => {
+    const projectRef = ref(database, `${PROJECTS_PATH}/${projectId}`);
+    await update(projectRef, {
+        isFeatured,
+        updatedAt: serverTimestamp()
+    });
+};
+
+/**
+ * Retrieves all featured projects for a specific user.
+ * 
+ * @param userId - The ID of the user whose featured projects to fetch
+ * @returns An array of featured projects owned by the user
+ */
+export const getFeaturedProjects = async (userId: string): Promise<Project[]> => {
+    const projectsRef = ref(database, PROJECTS_PATH);
+    const q = query(
+        projectsRef,
+        orderByChild("ownerId"),
+        equalTo(userId)
+    );
+
+    const snapshot = await get(q);
+    const projects: Project[] = [];
+
+    if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            // Only include projects that are featured
+            if (data.isFeatured) {
+                projects.push({
+                    id: childSnapshot.key!,
+                    title: data.title,
+                    html: data.html,
+                    css: data.css,
+                    js: data.js,
+                    ownerId: data.ownerId,
+                    updatedAt: data.updatedAt,
+                    isPublic: data.isPublic ?? false,
+                    isFeatured: true
+                });
+            }
+        });
+    }
+
+    // Sort by updatedAt descending
+    return projects.sort((a, b) => b.updatedAt - a.updatedAt);
 };
