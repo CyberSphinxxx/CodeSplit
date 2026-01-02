@@ -12,6 +12,8 @@ import {
     ChevronRight,
     Archive,
     FileCode,
+    Globe,
+    Save,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -21,6 +23,8 @@ interface HeaderProps {
     onDownload?: () => void;
     onExportHTML?: () => void;
     onShare?: () => void;
+    onPublish?: () => void;
+    onSave?: () => void;
     isSaving?: boolean;
     isSaved?: boolean;
     isDashboardView?: boolean;
@@ -33,6 +37,8 @@ function Header({
     onDownload,
     onExportHTML,
     onShare,
+    onPublish,
+    onSave,
     isSaving,
     isSaved = true,
     isDashboardView = false,
@@ -162,6 +168,18 @@ function Header({
                         {/* Editor-only actions */}
                         {!isDashboardView && (
                             <>
+                                {/* Manual Save Button */}
+                                {user && onSave && (
+                                    <button
+                                        onClick={onSave}
+                                        disabled={isSaving}
+                                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Save (Ctrl+S)"
+                                    >
+                                        <Save className="w-4 h-4" />
+                                    </button>
+                                )}
+
                                 {/* Cloud Status Indicator */}
                                 {user && (
                                     <div
@@ -203,6 +221,17 @@ function Header({
                                 >
                                     <Share2 className="w-4 h-4" />
                                 </button>
+
+                                {/* Publish Button */}
+                                {user && (
+                                    <button
+                                        onClick={onPublish}
+                                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors"
+                                        title="Publish to Community"
+                                    >
+                                        <Globe className="w-4 h-4" />
+                                    </button>
+                                )}
 
                                 {/* Divider */}
                                 <div className="w-px h-5 bg-slate-600 mx-1" />
