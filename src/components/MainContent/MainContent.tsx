@@ -135,9 +135,10 @@ export interface MainContentRef {
 
 interface MainContentProps {
     isZenMode?: boolean;
+    onCodeChange?: (data: { html: string; css: string; js: string }) => void;
 }
 
-const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = false }, ref) => {
+const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = false, onCodeChange }, ref) => {
     // Auto-save: files, CDN settings, and editor settings are persisted to localStorage
     const [files, setFiles] = useLocalStorage<FileState[]>("ice-files", DEFAULT_FILES);
     const [cdnSettings, setCdnSettings] = useLocalStorage<CdnSettings>("ice-cdn", DEFAULT_CDN_SETTINGS);
@@ -152,6 +153,9 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
     const [showToast, setShowToast] = useState(false);
     const [isPreviewVisible, setIsPreviewVisible] = useState(true);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+    // Track if initial load is complete to avoid triggering onCodeChange on mount
+    const isInitialLoad = useRef(true);
 
     // Load from URL on mount
     useEffect(() => {
@@ -172,7 +176,33 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                 console.error("Failed to load code from URL:", e);
             }
         }
+        // Mark initial load as complete after a short delay
+        const timer = setTimeout(() => {
+            isInitialLoad.current = false;
+        }, 500);
+        return () => clearTimeout(timer);
     }, []);
+
+    // Debounced code content for triggering onCodeChange
+    const codeContent = useMemo(() => {
+        const htmlFile = files.find((f) => f.name === "index.html");
+        const cssFile = files.find((f) => f.name === "styles.css");
+        const jsFile = files.find((f) => f.name === "script.js");
+        return {
+            html: htmlFile?.content || "",
+            css: cssFile?.content || "",
+            js: jsFile?.content || "",
+        };
+    }, [files]);
+
+    const debouncedCode = useDebounce(codeContent, 1500); // 1.5 second debounce for auto-save
+
+    // Trigger onCodeChange callback when code changes (debounced)
+    useEffect(() => {
+        if (!isInitialLoad.current && onCodeChange) {
+            onCodeChange(debouncedCode);
+        }
+    }, [debouncedCode, onCodeChange]);
 
     // Resizable split state
     const { width: editorWidth, startResizing, isResizing } = useResizable(50);
