@@ -136,18 +136,23 @@ function PublicProfile() {
 
             if (looksLikeUid) {
                 // Treat as direct userId
+                console.log("[PublicProfile] Param looks like UID:", cleanParam);
                 setResolvedUserId(cleanParam);
                 setIsResolvingUsername(false);
             } else {
                 // Treat as username, look it up
+                console.log("[PublicProfile] Param looks like username:", cleanParam);
                 try {
                     const uid = await getUserIdByUsername(cleanParam);
+                    console.log("[PublicProfile] Resolved UID for username:", cleanParam, "->", uid);
                     if (uid) {
                         setResolvedUserId(uid);
                     } else {
+                        console.warn("[PublicProfile] Username not found:", cleanParam);
                         setUsernameNotFound(true);
                     }
-                } catch {
+                } catch (err) {
+                    console.error("[PublicProfile] Error resolving username:", err);
                     setUsernameNotFound(true);
                 }
                 setIsResolvingUsername(false);
