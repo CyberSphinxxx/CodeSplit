@@ -50,6 +50,7 @@ export interface CdnSettings {
 export interface EditorSettings {
     showMinimap: boolean;
     wordWrap: boolean;
+    theme?: string;
 }
 
 interface SettingsModalProps {

@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 
+import type { RefObject } from "react";
+
 interface PreviewProps {
     srcDoc: string;
     onRefresh?: () => void;
     onToggleVisibility?: () => void;
+    iframeRef?: RefObject<HTMLIFrameElement | null>;
 }
 
 type DeviceMode = "desktop" | "tablet" | "mobile";
@@ -157,6 +160,7 @@ function Preview({ srcDoc, onRefresh, onToggleVisibility }: PreviewProps) {
                     {/* Iframe */}
                     <div className={`bg-white ${deviceMode === "mobile" ? "h-[calc(100%-24px)]" : "h-full"}`}>
                         <iframe
+                            ref={iframeRef}
                             title="Preview"
                             srcDoc={srcDoc}
                             sandbox="allow-scripts"

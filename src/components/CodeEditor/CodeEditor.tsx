@@ -9,6 +9,7 @@ interface CodeEditorProps {
     onChange: (value: string | undefined) => void;
     showMinimap?: boolean;
     wordWrap?: boolean;
+    theme?: string;
     onSave?: () => void;
 }
 
@@ -19,6 +20,7 @@ function CodeEditor({
     showMinimap = true,
     wordWrap = true,
     onSave
+    theme = "vs-dark",
 }: CodeEditorProps) {
     const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
     const disposeEmmetRef = useRef<(() => void) | null>(null);
@@ -92,7 +94,7 @@ function CodeEditor({
         <Editor
             height="100%"
             language={getMonacoLanguage(language)}
-            theme="vs-dark"
+            theme={theme}
             value={value}
             onChange={onChange}
             onMount={handleEditorMount}

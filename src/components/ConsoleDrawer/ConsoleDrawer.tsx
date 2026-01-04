@@ -14,6 +14,7 @@ interface ConsoleDrawerProps {
     onClear: () => void;
     isOpen: boolean;
     onToggle: () => void;
+    onExecute?: (code: string) => void;
 }
 
 function ConsoleDrawer({ logs, onClear, isOpen, onToggle }: ConsoleDrawerProps) {
