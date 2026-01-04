@@ -201,6 +201,17 @@ function CodeEditor({
         }
     }, [theme]);
 
+    // Clear markers when switching projects or languages
+    useEffect(() => {
+        if (monacoRef.current && editorRef.current) {
+            const model = editorRef.current.getModel();
+            if (model) {
+                // Clear all markers for this model
+                monacoRef.current.editor.setModelMarkers(model, 'owner', []);
+            }
+        }
+    }, [value, language]);
+
     // Cleanup on unmount
     useEffect(() => {
         return () => {
