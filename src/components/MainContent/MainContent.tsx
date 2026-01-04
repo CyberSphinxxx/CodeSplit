@@ -150,23 +150,61 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
 
     // Load from URL on mount
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const codeParam = params.get("code");
-        if (codeParam) {
-            try {
-                const decompressed = LZString.decompressFromEncodedURIComponent(codeParam);
-                if (decompressed) {
-                    const parsed = JSON.parse(decompressed);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setFiles(parsed);
-                        // Clear the URL parameter after loading
-                        window.history.replaceState({}, "", window.location.pathname);
+        const loadFromUrl = async () => {
+            const path = window.location.pathname.slice(1); // Remove leading slash
+            const params = new URLSearchParams(window.location.search);
+            const codeParam = params.get("code");
+
+            let loadedFiles: FileState[] | null = null;
+
+            // 1. Try loading from Firestore (short ID in path)
+            if (path && path.length > 0 && path !== "index.html") {
+                try {
+                    const { doc, getDoc } = await import("firebase/firestore");
+                    const { db } = await import("../../lib/firebase");
+                    const docRef = doc(db, "snippets", path);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data && data.files) {
+                            loadedFiles = data.files;
+                        }
+                    } else {
+                        console.warn("Snippet not found");
                     }
+                } catch (e) {
+                    console.error("Failed to load from Firestore:", e);
                 }
-            } catch (e) {
-                console.error("Failed to load code from URL:", e);
             }
-        }
+
+            // 2. Fallback: Try loading from query param (legacy)
+            if (!loadedFiles && codeParam) {
+                try {
+                    const decompressed = LZString.decompressFromEncodedURIComponent(codeParam);
+                    if (decompressed) {
+                        const parsed = JSON.parse(decompressed);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            loadedFiles = parsed;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to load code from URL:", e);
+                }
+            }
+
+            if (loadedFiles) {
+                setFiles(loadedFiles);
+                // Clean URL but keep the ID if it was a short link
+                if (path && !codeParam) {
+                    // Do nothing, keep the short path
+                } else {
+                    window.history.replaceState({}, "", window.location.pathname);
+                }
+            }
+        };
+
+        loadFromUrl();
     }, []);
 
     // Resizable split state
@@ -366,17 +404,47 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
     }, [files, cdnSettings]);
 
     // Share code via URL
-    const handleShare = useCallback(() => {
+    const handleShare = useCallback(async () => {
         const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(files));
-        const shareUrl = `${window.location.origin}${window.location.pathname}?code=${compressed}`;
 
-        navigator.clipboard.writeText(shareUrl).then(() => {
+        setToastMessage("Generating link...");
+        setShowToast(true);
+
+        try {
+            // Generate short ID
+            const { nanoid } = await import("nanoid");
+            const shortId = nanoid(10);
+
+            // Save to Firestore
+            const { doc, setDoc } = await import("firebase/firestore");
+            const { db } = await import("../../lib/firebase");
+
+            await setDoc(doc(db, "snippets", shortId), {
+                files: files,
+                createdAt: new Date().toISOString()
+            });
+
+            // Construct custom URL
+            const finalUrl = `${window.location.origin}/${shortId}`;
+
+            await navigator.clipboard.writeText(finalUrl);
             setToastMessage("Link copied to clipboard!");
-            setShowToast(true);
-        }).catch(() => {
-            // Fallback: show URL in prompt
-            prompt("Copy this link:", shareUrl);
-        });
+
+        } catch (err) {
+            console.error("Share failed:", err);
+            const errorMessage = err instanceof Error ? err.message : String(err);
+
+            // Fallback to legacy
+            const legacyUrl = `${window.location.origin}?code=${compressed}`;
+
+            try {
+                await navigator.clipboard.writeText(legacyUrl);
+                setToastMessage(`Error: ${errorMessage}. Long link copied.`);
+            } catch {
+                prompt(`Error: ${errorMessage}. Copy this link:`, legacyUrl);
+            }
+        }
+        setShowToast(true);
     }, [files]);
 
     // Expose methods to parent via ref
@@ -402,8 +470,8 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                 {/* Editor Panel */}
                 <div
                     className={`flex flex-col min-h-0 transition-all duration-300 ease-out ${isPreviewVisible
-                            ? 'border-r border-slate-700'
-                            : 'mx-auto border-x border-slate-700 rounded-lg overflow-hidden'
+                        ? 'border-r border-slate-700'
+                        : 'mx-auto border-x border-slate-700 rounded-lg overflow-hidden'
                         }`}
                     style={{
                         width: isPreviewVisible ? `${editorWidth}%` : '100%',
