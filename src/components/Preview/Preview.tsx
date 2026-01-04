@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import type { MutableRefObject } from "react";
+
+import type { RefObject } from "react";
 
 interface PreviewProps {
     srcDoc: string;
     onRefresh?: () => void;
     onToggleVisibility?: () => void;
-    iframeRef?: MutableRefObject<HTMLIFrameElement | null>;
+    iframeRef?: RefObject<HTMLIFrameElement | null>;
 }
 
 type DeviceMode = "desktop" | "tablet" | "mobile";
