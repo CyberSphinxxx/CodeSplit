@@ -39,14 +39,10 @@ function App() {
           <Route path="profile/:userId" element={<Profile />} />
         </Route>
 
-        {/* Editor Route */}
+        {/* Editor Route - Public (Guest Mode enabled) */}
         <Route
           path="/editor/:id?"
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
+          element={<Layout />}
         />
       </Routes>
     </Suspense>
