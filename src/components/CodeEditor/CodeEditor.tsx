@@ -19,8 +19,8 @@ function CodeEditor({
     onChange,
     showMinimap = true,
     wordWrap = true,
-    onSave
     theme = "vs-dark",
+    onSave,
 }: CodeEditorProps) {
     const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
     const disposeEmmetRef = useRef<(() => void) | null>(null);

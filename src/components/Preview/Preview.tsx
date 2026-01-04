@@ -17,7 +17,7 @@ const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
     mobile: { width: "375px", label: "Mobile" },
 };
 
-function Preview({ srcDoc, onRefresh, onToggleVisibility }: PreviewProps) {
+function Preview({ srcDoc, onRefresh, onToggleVisibility, iframeRef }: PreviewProps) {
     const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
     const popoutWindowRef = useRef<Window | null>(null);
 
