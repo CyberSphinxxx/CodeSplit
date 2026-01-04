@@ -11,15 +11,23 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
     "emmet-monaco-es": "^5.6.1",
     "file-saver": "^2.0.5",
     "firebase": "^12.7.0",
+<<<<<<< HEAD
+=======
+    "framer-motion": "^12.23.26",
+>>>>>>> b107b5e32c263371c14df6ea1362c7abc61b4451
     "jszip": "^3.10.1",
+    "lucide-react": "^0.562.0",
     "lz-string": "^1.5.0",
     "nanoid": "^5.1.6",
     "prettier": "^3.7.4",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.11.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
