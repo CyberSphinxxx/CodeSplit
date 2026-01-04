@@ -1,4 +1,4 @@
-import { useImperativeHandle, forwardRef, useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useImperativeHandle, forwardRef, useState, useMemo, useCallback, useEffect } from "react";
 import * as prettier from "prettier/standalone";
 import * as prettierHtml from "prettier/plugins/html";
 import * as prettierCss from "prettier/plugins/postcss";
@@ -119,7 +119,6 @@ const DEFAULT_CDN_SETTINGS: CdnSettings = {
 const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
     showMinimap: true,
     wordWrap: true,
-    theme: "vs-dark",
 };
 
 // Expose methods to parent via ref
@@ -127,18 +126,14 @@ export interface MainContentRef {
     formatCode: () => void;
     openSettings: () => void;
     downloadProject: () => void;
-    exportHTML: () => void;
     shareCode: () => void;
-    getProjectData: () => { html: string; css: string; js: string };
-    loadProject: (html: string, css: string, js: string) => void;
 }
 
 interface MainContentProps {
     isZenMode?: boolean;
-    onCodeChange?: (data: { html: string; css: string; js: string }) => void;
 }
 
-const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = false, onCodeChange }, ref) => {
+const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = false }, ref) => {
     // Auto-save: files, CDN settings, and editor settings are persisted to localStorage
     const [files, setFiles] = useLocalStorage<FileState[]>("ice-files", DEFAULT_FILES);
     const [cdnSettings, setCdnSettings] = useLocalStorage<CdnSettings>("ice-cdn", DEFAULT_CDN_SETTINGS);
@@ -152,10 +147,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
     const [toastMessage, setToastMessage] = useState("");
     const [showToast, setShowToast] = useState(false);
     const [isPreviewVisible, setIsPreviewVisible] = useState(true);
-    const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
-    // Track if initial load is complete to avoid triggering onCodeChange on mount
-    const isInitialLoad = useRef(true);
 
     // Load from URL on mount
     useEffect(() => {
@@ -186,7 +177,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                     console.error("Failed to load from Firestore:", e);
                 }
             }
-<<<<<<< HEAD
 
             // 2. Fallback: Try loading from query param (legacy)
             if (!loadedFiles && codeParam) {
@@ -215,36 +205,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
         };
 
         loadFromUrl();
-=======
-        }
-        // Mark initial load as complete after a short delay
-        const timer = setTimeout(() => {
-            isInitialLoad.current = false;
-        }, 500);
-        return () => clearTimeout(timer);
->>>>>>> b107b5e32c263371c14df6ea1362c7abc61b4451
     }, []);
-
-    // Debounced code content for triggering onCodeChange
-    const codeContent = useMemo(() => {
-        const htmlFile = files.find((f) => f.name === "index.html");
-        const cssFile = files.find((f) => f.name === "styles.css");
-        const jsFile = files.find((f) => f.name === "script.js");
-        return {
-            html: htmlFile?.content || "",
-            css: cssFile?.content || "",
-            js: jsFile?.content || "",
-        };
-    }, [files]);
-
-    const debouncedCode = useDebounce(codeContent, 1500); // 1.5 second debounce for auto-save
-
-    // Trigger onCodeChange callback when code changes (debounced)
-    useEffect(() => {
-        if (!isInitialLoad.current && onCodeChange) {
-            onCodeChange(debouncedCode);
-        }
-    }, [debouncedCode, onCodeChange]);
 
     // Resizable split state
     const { width: editorWidth, startResizing, isResizing } = useResizable(50);
@@ -266,11 +227,10 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
             .join("\n");
     }, [cdnSettings]);
 
-    // Console interception script with REPL support
+    // Console interception script
     const consoleScript = `
     <script>
       (function() {
-        // Intercept console methods
         ['log', 'warn', 'error', 'info'].forEach(method => {
           const original = console[method];
           console[method] = function(...args) {
@@ -283,34 +243,8 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
             original.apply(console, args);
           };
         });
-        
-        // Handle runtime errors
         window.addEventListener('error', function(event) {
           console.error(event.message);
-        });
-        
-        // REPL: Listen for execute messages from parent
-        window.addEventListener('message', function(event) {
-          if (event.data && event.data.type === 'execute') {
-            try {
-              const result = eval(event.data.code);
-              window.parent.postMessage({
-                type: 'result',
-                result: result,
-                error: null,
-                id: event.data.id,
-                timestamp: Date.now()
-              }, '*');
-            } catch (err) {
-              window.parent.postMessage({
-                type: 'result',
-                result: null,
-                error: err.message || String(err),
-                id: event.data.id,
-                timestamp: Date.now()
-              }, '*');
-            }
-          }
         });
       })();
     </script>
@@ -341,7 +275,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
         return finalHtml;
     }, [debouncedFiles, cdnTags]);
 
-    // Handle postMessage from iframe (console logs and REPL results)
+    // Handle postMessage from iframe
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
             if (event.data && event.data.type === "console") {
@@ -354,69 +288,11 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                         timestamp: event.data.timestamp,
                     },
                 ]);
-            } else if (event.data && event.data.type === "result") {
-                // REPL result from iframe
-                if (event.data.error) {
-                    setLogs((prev) => [
-                        ...prev,
-                        {
-                            id: Math.random().toString(36).substr(2, 9),
-                            level: "error" as LogLevel,
-                            messages: [event.data.error],
-                            timestamp: event.data.timestamp,
-                        },
-                    ]);
-                } else {
-                    // Format the result for display
-                    const resultValue = event.data.result;
-                    const displayValue = resultValue === undefined
-                        ? "undefined"
-                        : resultValue === null
-                            ? "null"
-                            : typeof resultValue === "object"
-                                ? JSON.stringify(resultValue, null, 2)
-                                : String(resultValue);
-                    setLogs((prev) => [
-                        ...prev,
-                        {
-                            id: Math.random().toString(36).substr(2, 9),
-                            level: "result" as LogLevel,
-                            messages: [displayValue],
-                            timestamp: event.data.timestamp,
-                        },
-                    ]);
-                }
             }
         };
 
         window.addEventListener("message", handleMessage);
         return () => window.removeEventListener("message", handleMessage);
-    }, []);
-
-    // Execute code in iframe context (REPL)
-    const handleExecuteCode = useCallback((code: string) => {
-        // Add command to logs
-        setLogs((prev) => [
-            ...prev,
-            {
-                id: Math.random().toString(36).substr(2, 9),
-                level: "command" as LogLevel,
-                messages: [code],
-                timestamp: Date.now(),
-            },
-        ]);
-
-        // Send to iframe for execution
-        if (iframeRef.current?.contentWindow) {
-            iframeRef.current.contentWindow.postMessage(
-                {
-                    type: "execute",
-                    code: code,
-                    id: Math.random().toString(36).substr(2, 9),
-                },
-                "*"
-            );
-        }
     }, []);
 
     const handleCodeChange = useCallback(
@@ -527,42 +403,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
         });
     }, [files, cdnSettings]);
 
-    // Export as single HTML file with embedded CSS and JS
-    const handleExportHTML = useCallback(() => {
-        const htmlFile = files.find((f) => f.name === "index.html");
-        const cssFile = files.find((f) => f.name === "styles.css");
-        const jsFile = files.find((f) => f.name === "script.js");
-
-        if (!htmlFile) return;
-
-        // Generate CDN tags for enabled libraries
-        const cdnTagsForExport = CDN_LIBRARIES
-            .filter((lib) => cdnSettings[lib.id])
-            .flatMap((lib) => lib.tags)
-            .join("\n    ");
-
-        // Create standalone HTML with embedded CSS and JS
-        let standaloneHtml = htmlFile.content;
-
-        // Build the head injection with CDN tags and embedded CSS
-        const cssEmbed = cssFile ? `<style>\n${cssFile.content}\n    </style>` : "";
-        const headInjection = `${cdnTagsForExport ? cdnTagsForExport + "\n    " : ""}${cssEmbed}`;
-
-        if (headInjection) {
-            standaloneHtml = standaloneHtml.replace("</head>", `    ${headInjection}\n</head>`);
-        }
-
-        // Inject embedded JS before </body>
-        if (jsFile) {
-            const jsEmbed = `<script>\n${jsFile.content}\n    </script>`;
-            standaloneHtml = standaloneHtml.replace("</body>", `    ${jsEmbed}\n</body>`);
-        }
-
-        // Create blob and download
-        const blob = new Blob([standaloneHtml], { type: "text/html;charset=utf-8" });
-        saveAs(blob, "index.html");
-    }, [files, cdnSettings]);
-
     // Share code via URL
     const handleShare = useCallback(async () => {
         const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(files));
@@ -612,26 +452,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
         formatCode: handleFormatCode,
         openSettings: () => setIsSettingsOpen(true),
         downloadProject: handleDownload,
-        exportHTML: handleExportHTML,
         shareCode: handleShare,
-        getProjectData: () => {
-            const htmlFile = files.find((f) => f.name === "index.html");
-            const cssFile = files.find((f) => f.name === "styles.css");
-            const jsFile = files.find((f) => f.name === "script.js");
-            return {
-                html: htmlFile?.content || "",
-                css: cssFile?.content || "",
-                js: jsFile?.content || "",
-            };
-        },
-        loadProject: (html: string, css: string, js: string) => {
-            setFiles([
-                { id: "index.html", name: "index.html", language: "html", content: html },
-                { id: "styles.css", name: "styles.css", language: "css", content: css },
-                { id: "script.js", name: "script.js", language: "javascript", content: js },
-            ]);
-            setActiveFileId("index.html");
-        },
     }));
 
     return (
@@ -673,7 +494,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                             onChange={handleCodeChange}
                             showMinimap={editorSettings.showMinimap}
                             wordWrap={editorSettings.wordWrap}
-                            theme={editorSettings.theme}
                             onSave={handleRefresh}
                         />
                     </div>
@@ -696,7 +516,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                             srcDoc={compiledDoc}
                             onRefresh={handleRefresh}
                             onToggleVisibility={() => setIsPreviewVisible(false)}
-                            iframeRef={iframeRef}
                         />
 
                         {/* Console - hidden in Zen Mode */}
@@ -706,7 +525,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                                 onClear={handleClearLogs}
                                 isOpen={isConsoleOpen}
                                 onToggle={() => setIsConsoleOpen(!isConsoleOpen)}
-                                onExecute={handleExecuteCode}
                             />
                         )}
                     </div>

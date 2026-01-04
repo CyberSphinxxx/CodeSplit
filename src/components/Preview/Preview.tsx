@@ -1,11 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import type { MutableRefObject } from "react";
 
 interface PreviewProps {
     srcDoc: string;
     onRefresh?: () => void;
     onToggleVisibility?: () => void;
-    iframeRef?: MutableRefObject<HTMLIFrameElement | null>;
 }
 
 type DeviceMode = "desktop" | "tablet" | "mobile";
@@ -16,7 +14,7 @@ const DEVICE_SIZES: Record<DeviceMode, { width: string; label: string }> = {
     mobile: { width: "375px", label: "Mobile" },
 };
 
-function Preview({ srcDoc, onRefresh, onToggleVisibility, iframeRef }: PreviewProps) {
+function Preview({ srcDoc, onRefresh, onToggleVisibility }: PreviewProps) {
     const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
     const popoutWindowRef = useRef<Window | null>(null);
 
@@ -159,7 +157,6 @@ function Preview({ srcDoc, onRefresh, onToggleVisibility, iframeRef }: PreviewPr
                     {/* Iframe */}
                     <div className={`bg-white ${deviceMode === "mobile" ? "h-[calc(100%-24px)]" : "h-full"}`}>
                         <iframe
-                            ref={iframeRef}
                             title="Preview"
                             srcDoc={srcDoc}
                             sandbox="allow-scripts"
