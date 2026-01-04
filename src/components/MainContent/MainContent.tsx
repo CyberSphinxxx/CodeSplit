@@ -186,8 +186,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                     console.error("Failed to load from Firestore:", e);
                 }
             }
-<<<<<<< HEAD
-
             // 2. Fallback: Try loading from query param (legacy)
             if (!loadedFiles && codeParam) {
                 try {
@@ -215,14 +213,11 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
         };
 
         loadFromUrl();
-=======
-        }
         // Mark initial load as complete after a short delay
         const timer = setTimeout(() => {
             isInitialLoad.current = false;
         }, 500);
         return () => clearTimeout(timer);
->>>>>>> b107b5e32c263371c14df6ea1362c7abc61b4451
     }, []);
 
     // Debounced code content for triggering onCodeChange
