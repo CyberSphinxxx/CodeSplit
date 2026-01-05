@@ -19,18 +19,15 @@ import useLocalStorage from "../../hooks/useLocalStorage";
 import { useResizable } from "../../hooks/useResizable";
 import { createShortLink } from "../../services/shortLinkService";
 import { useToast } from "../../context/ToastContext";
+import { FILE_NAMES } from "../../constants/files";
+import type { ProjectFile } from "../../types/project";
 
-interface FileState {
-    id: string;
-    name: string;
-    language: string;
-    content: string;
-}
+export type FileState = ProjectFile;
 
 const DEFAULT_FILES: FileState[] = [
     {
-        id: "index.html",
-        name: "index.html",
+        id: FILE_NAMES.HTML,
+        name: FILE_NAMES.HTML,
         language: "html",
         content: `<!DOCTYPE html>
 <html lang="en">
@@ -49,8 +46,8 @@ const DEFAULT_FILES: FileState[] = [
 </html>`,
     },
     {
-        id: "styles.css",
-        name: "styles.css",
+        id: FILE_NAMES.CSS,
+        name: FILE_NAMES.CSS,
         language: "css",
         content: `body {
     font-family: 'Segoe UI', sans-serif;
@@ -98,8 +95,8 @@ button:hover {
 }`,
     },
     {
-        id: "script.js",
-        name: "script.js",
+        id: FILE_NAMES.JS,
+        name: FILE_NAMES.JS,
         language: "javascript",
         content: `function handleClick() {
     console.log('Button clicked at ' + new Date().toLocaleTimeString());
@@ -144,7 +141,7 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
     const [cdnSettings, setCdnSettings] = useLocalStorage<CdnSettings>("ice-cdn", DEFAULT_CDN_SETTINGS);
     const [editorSettings, setEditorSettings] = useLocalStorage<EditorSettings>("ice-editor", DEFAULT_EDITOR_SETTINGS);
 
-    const [activeFileId, setActiveFileId] = useState("index.html");
+    const [activeFileId, setActiveFileId] = useState<string>(FILE_NAMES.HTML);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isConsoleOpen, setIsConsoleOpen] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -166,9 +163,9 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
 
     // Debounced code content for triggering onCodeChange
     const codeContent = useMemo(() => {
-        const htmlFile = files.find((f) => f.name === "index.html");
-        const cssFile = files.find((f) => f.name === "styles.css");
-        const jsFile = files.find((f) => f.name === "script.js");
+        const htmlFile = files.find((f) => f.name === FILE_NAMES.HTML);
+        const cssFile = files.find((f) => f.name === FILE_NAMES.CSS);
+        const jsFile = files.find((f) => f.name === FILE_NAMES.JS);
         return {
             html: htmlFile?.content || "",
             css: cssFile?.content || "",
