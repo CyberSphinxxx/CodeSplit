@@ -6,31 +6,28 @@ import * as prettierBabel from "prettier/plugins/babel";
 import * as prettierEstree from "prettier/plugins/estree";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import LZString from "lz-string";
 
 import CodeEditor from "../CodeEditor/CodeEditor";
 import Preview from "../Preview/Preview";
 import TabBar from "../TabBar/TabBar";
 import ConsoleDrawer from "../ConsoleDrawer/ConsoleDrawer";
 import SettingsModal, { CDN_LIBRARIES } from "../SettingsModal/SettingsModal";
-import Toast from "../Toast/Toast";
 import type { CdnSettings, EditorSettings } from "../SettingsModal/SettingsModal";
 import type { LogEntry, LogLevel } from "../ConsoleDrawer/ConsoleDrawer";
 import useDebounce from "../../hooks/useDebounce";
 import useLocalStorage from "../../hooks/useLocalStorage";
 import { useResizable } from "../../hooks/useResizable";
+import { createShortLink } from "../../services/shortLinkService";
+import { useToast } from "../../context/ToastContext";
+import { FILE_NAMES } from "../../constants/files";
+import type { ProjectFile } from "../../types/project";
 
-interface FileState {
-    id: string;
-    name: string;
-    language: string;
-    content: string;
-}
+export type FileState = ProjectFile;
 
 const DEFAULT_FILES: FileState[] = [
     {
-        id: "index.html",
-        name: "index.html",
+        id: FILE_NAMES.HTML,
+        name: FILE_NAMES.HTML,
         language: "html",
         content: `<!DOCTYPE html>
 <html lang="en">
@@ -49,8 +46,8 @@ const DEFAULT_FILES: FileState[] = [
 </html>`,
     },
     {
-        id: "styles.css",
-        name: "styles.css",
+        id: FILE_NAMES.CSS,
+        name: FILE_NAMES.CSS,
         language: "css",
         content: `body {
     font-family: 'Segoe UI', sans-serif;
@@ -98,8 +95,8 @@ button:hover {
 }`,
     },
     {
-        id: "script.js",
-        name: "script.js",
+        id: FILE_NAMES.JS,
+        name: FILE_NAMES.JS,
         language: "javascript",
         content: `function handleClick() {
     console.log('Button clicked at ' + new Date().toLocaleTimeString());
@@ -144,38 +141,19 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
     const [cdnSettings, setCdnSettings] = useLocalStorage<CdnSettings>("ice-cdn", DEFAULT_CDN_SETTINGS);
     const [editorSettings, setEditorSettings] = useLocalStorage<EditorSettings>("ice-editor", DEFAULT_EDITOR_SETTINGS);
 
-    const [activeFileId, setActiveFileId] = useState("index.html");
+    const [activeFileId, setActiveFileId] = useState<string>(FILE_NAMES.HTML);
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [isConsoleOpen, setIsConsoleOpen] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isFormatting, setIsFormatting] = useState(false);
-    const [toastMessage, setToastMessage] = useState("");
-    const [showToast, setShowToast] = useState(false);
+    const { showToast } = useToast();
     const [isPreviewVisible, setIsPreviewVisible] = useState(true);
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     // Track if initial load is complete to avoid triggering onCodeChange on mount
     const isInitialLoad = useRef(true);
 
-    // Load from URL on mount
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const codeParam = params.get("code");
-        if (codeParam) {
-            try {
-                const decompressed = LZString.decompressFromEncodedURIComponent(codeParam);
-                if (decompressed) {
-                    const parsed = JSON.parse(decompressed);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setFiles(parsed);
-                        // Clear the URL parameter after loading
-                        window.history.replaceState({}, "", window.location.pathname);
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to load code from URL:", e);
-            }
-        }
         // Mark initial load as complete after a short delay
         const timer = setTimeout(() => {
             isInitialLoad.current = false;
@@ -185,9 +163,9 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
 
     // Debounced code content for triggering onCodeChange
     const codeContent = useMemo(() => {
-        const htmlFile = files.find((f) => f.name === "index.html");
-        const cssFile = files.find((f) => f.name === "styles.css");
-        const jsFile = files.find((f) => f.name === "script.js");
+        const htmlFile = files.find((f) => f.name === FILE_NAMES.HTML);
+        const cssFile = files.find((f) => f.name === FILE_NAMES.CSS);
+        const jsFile = files.find((f) => f.name === FILE_NAMES.JS);
         return {
             html: htmlFile?.content || "",
             css: cssFile?.content || "",
@@ -521,19 +499,26 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
         saveAs(blob, "index.html");
     }, [files, cdnSettings]);
 
-    // Share code via URL
-    const handleShare = useCallback(() => {
-        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(files));
-        const shareUrl = `${window.location.origin}${window.location.pathname}?code=${compressed}`;
+    const handleShare = useCallback(async () => {
+        try {
+            // Create a short link in Firebase Realtime Database
+            const shortId = await createShortLink(files);
+            // Updated format: /editor/ID instead of ?s=ID
+            const shareUrl = `${window.location.origin}/editor/${shortId}`;
 
-        navigator.clipboard.writeText(shareUrl).then(() => {
-            setToastMessage("Link copied to clipboard!");
-            setShowToast(true);
-        }).catch(() => {
-            // Fallback: show URL in prompt
-            prompt("Copy this link:", shareUrl);
-        });
-    }, [files]);
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                showToast("Short link copied to clipboard! 🚀");
+            } catch (clipboardError) {
+                console.warn("Could not copy to clipboard, falling back to prompt:", clipboardError);
+                // Fallback for when clipboard API fails
+                prompt("Copy this link:", shareUrl);
+            }
+        } catch (error) {
+            console.error("Failed to create short link:", error);
+            showToast("Failed to create short link. Please check your connection.");
+        }
+    }, [files, showToast]);
 
     // Expose methods to parent via ref
     useImperativeHandle(ref, () => ({
@@ -666,13 +651,6 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
                     setCdnSettings(cdn);
                     setEditorSettings(editor);
                 }}
-            />
-
-            {/* Toast Notification */}
-            <Toast
-                message={toastMessage}
-                isVisible={showToast}
-                onClose={() => setShowToast(false)}
             />
         </>
     );

@@ -8,7 +8,9 @@ import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
 import type { MainContentRef } from "../MainContent/MainContent";
 import type { Project } from "../../services/projectService";
 import { renameProject, getProjectById, saveProject } from "../../services/projectService";
+import { getShortLinkData } from "../../services/shortLinkService";
 import { useAuth } from "../../context/AuthContext";
+import { FILE_NAMES } from "../../constants/files";
 
 // Lazy load MainContent to reduce initial bundle size
 // This separates Monaco Editor (~1.2MB) into a separate chunk
@@ -74,11 +76,36 @@ function Layout({ showDashboardOnMount = false }: LayoutProps) {
                         setCurrentProjectTitle(dbProject.title || "Untitled Project");
                         setFetchedProject(dbProject); // Store for loading into editor
                     } else {
-                        console.log("Project not found in database");
-                        setCurrentProjectTitle("Untitled Project");
+                        // Not a project ID, check if it's a short link ID
+                        console.log("Project not found, checking if it's a short link...");
+                        const shortLinkData = await getShortLinkData(projectId);
+                        if (shortLinkData) {
+                            console.log("Loaded from short link:", projectId);
+                            // Load files from short link
+                            if (shortLinkData.files && Array.isArray(shortLinkData.files)) {
+                                // Find html, css, js files properly from the array
+                                const htmlFile = shortLinkData.files.find(f => f.name === FILE_NAMES.HTML)?.content || "";
+                                const cssFile = shortLinkData.files.find(f => f.name === FILE_NAMES.CSS)?.content || "";
+                                const jsFile = shortLinkData.files.find(f => f.name === FILE_NAMES.JS)?.content || "";
+
+                                setFetchedProject({
+                                    id: `short-${projectId}`, // Temporary ID to prevent auto-saving back to shortLinks
+                                    title: "Shared Project",
+                                    html: htmlFile,
+                                    css: cssFile,
+                                    js: jsFile,
+                                    ownerId: "anonymous",
+                                    updatedAt: Date.now()
+                                });
+                                setCurrentProjectTitle("Shared Project");
+                            }
+                        } else {
+                            console.log("Not a valid project ID or short link ID");
+                            setCurrentProjectTitle("Untitled Project");
+                        }
                     }
                 } catch (error) {
-                    console.error("Error fetching project:", error);
+                    console.error("Error fetching project/short-link:", error);
                     setCurrentProjectTitle("Untitled Project");
                 }
                 setProjectLoaded(true);
