@@ -10,6 +10,7 @@ import type { Project } from "../../services/projectService";
 import { renameProject, getProjectById, saveProject } from "../../services/projectService";
 import { getShortLinkData } from "../../services/shortLinkService";
 import { useAuth } from "../../context/AuthContext";
+import { FILE_NAMES } from "../../constants/files";
 
 // Lazy load MainContent to reduce initial bundle size
 // This separates Monaco Editor (~1.2MB) into a separate chunk
@@ -83,9 +84,9 @@ function Layout({ showDashboardOnMount = false }: LayoutProps) {
                             // Load files from short link
                             if (shortLinkData.files && Array.isArray(shortLinkData.files)) {
                                 // Find html, css, js files properly from the array
-                                const htmlFile = shortLinkData.files.find(f => f.name === 'index.html')?.content || "";
-                                const cssFile = shortLinkData.files.find(f => f.name === 'styles.css')?.content || "";
-                                const jsFile = shortLinkData.files.find(f => f.name === 'script.js')?.content || "";
+                                const htmlFile = shortLinkData.files.find(f => f.name === FILE_NAMES.HTML)?.content || "";
+                                const cssFile = shortLinkData.files.find(f => f.name === FILE_NAMES.CSS)?.content || "";
+                                const jsFile = shortLinkData.files.find(f => f.name === FILE_NAMES.JS)?.content || "";
 
                                 setFetchedProject({
                                     id: `short-${projectId}`, // Temporary ID to prevent auto-saving back to shortLinks
