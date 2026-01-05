@@ -33,8 +33,12 @@ export const getShortLinkData = async (id: string): Promise<ShortLinkData | null
     const snapshot = await get(child(dbRef, `shortLinks/${id}`));
 
     if (snapshot.exists()) {
-        return snapshot.val() as ShortLinkData;
-    } else {
-        return null;
+        const data = snapshot.val();
+        // Basic validation to ensure data structure is correct
+        if (data && Array.isArray(data.files) && typeof data.createdAt === 'number') {
+            return data as ShortLinkData;
+        }
+        console.error(`Invalid short link data structure for id: ${id}`);
     }
+    return null;
 };
