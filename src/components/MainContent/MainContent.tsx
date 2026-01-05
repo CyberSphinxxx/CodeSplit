@@ -509,8 +509,14 @@ const MainContent = forwardRef<MainContentRef, MainContentProps>(({ isZenMode = 
             // Updated format: /editor/ID instead of ?s=ID
             const shareUrl = `${window.location.origin}/editor/${shortId}`;
 
-            await navigator.clipboard.writeText(shareUrl);
-            showToast("Short link copied to clipboard! 🚀");
+            try {
+                await navigator.clipboard.writeText(shareUrl);
+                showToast("Short link copied to clipboard! 🚀");
+            } catch (clipboardError) {
+                console.warn("Could not copy to clipboard, falling back to prompt:", clipboardError);
+                // Fallback for when clipboard API fails
+                prompt("Copy this link:", shareUrl);
+            }
         } catch (error) {
             console.error("Failed to create short link:", error);
             showToast("Failed to create short link. Please check your connection.");
